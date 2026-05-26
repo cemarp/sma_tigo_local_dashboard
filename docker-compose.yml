@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  dashboard:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: python3 main.py
+
+  scraper:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      - INVERTER_IP=192.168.1.83
+      - INVERTER_PASSWORD=User!2345
+    command: python3 scraper.py --interval 5

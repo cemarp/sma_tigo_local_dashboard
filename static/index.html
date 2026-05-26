@@ -125,22 +125,40 @@
             <!-- Module Level Comparison Charts -->
             <div class="mt-12 space-y-8 border-t pt-8">
                 <h2 class="text-xl font-bold text-center">Module Comparison History</h2>
-                <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
-                    <h2 class="text-center font-bold mb-2">Module Power (W)</h2>
-                    <div class="flex-1 min-h-0 relative">
-                        <canvas id="module-power-history-chart"></canvas>
+                
+                <div class="chart-container border rounded shadow-sm w-full" style="width: 100%">
+                    <div class="p-2 border-b bg-gray-50 flex justify-between items-center">
+                        <h2 class="font-bold text-gray-800">Module Power (W)</h2>
+                    </div>
+                    <div class="flex flex-1 min-h-0">
+                        <div class="flex-1 min-w-0 relative p-2">
+                            <canvas id="module-power-history-chart"></canvas>
+                        </div>
+                        <div class="w-60 border-l bg-gray-50 p-2 overflow-y-auto" id="module-power-history-sidebar"></div>
                     </div>
                 </div>
-                <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
-                    <h2 class="text-center font-bold mb-2">Module Voltage (V)</h2>
-                    <div class="flex-1 min-h-0 relative">
-                        <canvas id="module-voltage-history-chart"></canvas>
+                
+                <div class="chart-container border rounded shadow-sm w-full" style="width: 100%">
+                    <div class="p-2 border-b bg-gray-50 flex justify-between items-center">
+                        <h2 class="font-bold text-gray-800">Module Voltage (V)</h2>
+                    </div>
+                    <div class="flex flex-1 min-h-0">
+                        <div class="flex-1 min-w-0 relative p-2">
+                            <canvas id="module-voltage-history-chart"></canvas>
+                        </div>
+                        <div class="w-60 border-l bg-gray-50 p-2 overflow-y-auto" id="module-voltage-history-sidebar"></div>
                     </div>
                 </div>
-                <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
-                    <h2 class="text-center font-bold mb-2">Module Temperature (°C)</h2>
-                    <div class="flex-1 min-h-0 relative">
-                        <canvas id="module-temp-history-chart"></canvas>
+                
+                <div class="chart-container border rounded shadow-sm w-full" style="width: 100%">
+                    <div class="p-2 border-b bg-gray-50 flex justify-between items-center">
+                        <h2 class="font-bold text-gray-800">Module Temperature (°C)</h2>
+                    </div>
+                    <div class="flex flex-1 min-h-0">
+                        <div class="flex-1 min-w-0 relative p-2">
+                            <canvas id="module-temp-history-chart"></canvas>
+                        </div>
+                        <div class="w-60 border-l bg-gray-50 p-2 overflow-y-auto" id="module-temp-history-sidebar"></div>
                     </div>
                 </div>
             </div>
@@ -390,7 +408,204 @@
                 for(let i=0; i<Math.min(5, datasets.length); i++) datasets[i].hidden = false;
 
                 renderChart(mInfo.canvasId, datasets, mInfo.title);
+                buildSidebar(mInfo.canvasId, mInfo.canvasId.replace('-chart', '-sidebar'));
             });
+        }
+
+        function buildSidebar(canvasId, sidebarId) {
+            const sidebar = document.getElementById(sidebarId);
+            sidebar.innerHTML = '';
+            
+            const chart = charts[canvasId];
+            if (!chart) return;
+
+            const datasets = chart.data.datasets;
+            
+            // Map module number to its dataset index in chart
+            const modToDatasetIdx = {};
+            let currentIdx = 0;
+            config.strings.forEach(string => {
+                string.modules.forEach(modIdx => {
+                    modToDatasetIdx[modIdx] = currentIdx++;
+                });
+            });
+
+            // Container for all elements
+            const containerDiv = document.createElement('div');
+            containerDiv.className = 'space-y-3';
+
+            let lastCheckedCheckbox = null;
+
+            config.strings.forEach(string => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'border border-gray-200 rounded p-1.5 bg-white';
+
+                // String Header Row
+                const headerRow = document.createElement('div');
+                headerRow.className = 'flex items-center justify-between hover:bg-gray-100 p-1 rounded cursor-pointer select-none';
+
+                const leftSection = document.createElement('div');
+                leftSection.className = 'flex items-center space-x-1.5';
+
+                const expandBtn = document.createElement('span');
+                expandBtn.className = 'expand-btn text-[10px] w-4 text-center font-bold text-gray-500';
+                expandBtn.textContent = '▼';
+
+                const stringCheckbox = document.createElement('input');
+                stringCheckbox.type = 'checkbox';
+                stringCheckbox.className = 'string-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'font-semibold text-gray-800 text-[11px]';
+                titleSpan.textContent = string.name;
+
+                leftSection.appendChild(expandBtn);
+                leftSection.appendChild(stringCheckbox);
+                leftSection.appendChild(titleSpan);
+
+                const rightSection = document.createElement('div');
+                rightSection.className = 'flex items-center space-x-1';
+
+                const badge = document.createElement('span');
+                badge.className = 'text-[9px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full count-badge font-medium';
+
+                rightSection.appendChild(badge);
+
+                headerRow.appendChild(leftSection);
+                headerRow.appendChild(rightSection);
+                groupDiv.appendChild(headerRow);
+
+                // Modules list container
+                const listDiv = document.createElement('div');
+                listDiv.className = 'pl-5 pr-1 mt-1 space-y-1 modules-list';
+
+                const checkboxes = [];
+
+                string.modules.forEach(modIdx => {
+                    const dsIdx = modToDatasetIdx[modIdx];
+                    if (dsIdx === undefined) return;
+
+                    const dataset = datasets[dsIdx];
+                    
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer select-none text-[11px]';
+
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.className = 'module-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+                    cb.checked = !dataset.hidden;
+                    cb.dataset.mod = modIdx;
+                    cb.dataset.dsIdx = dsIdx;
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'text-gray-700';
+                    nameSpan.textContent = `M#${modIdx}`;
+
+                    const colorBlock = document.createElement('span');
+                    colorBlock.className = 'w-3 h-1.5 rounded-sm inline-block';
+                    colorBlock.style.backgroundColor = dataset.borderColor || '#ccc';
+
+                    label.appendChild(cb);
+                    label.appendChild(colorBlock);
+                    label.appendChild(nameSpan);
+                    listDiv.appendChild(label);
+
+                    checkboxes.push(cb);
+                });
+
+                groupDiv.appendChild(listDiv);
+                containerDiv.appendChild(groupDiv);
+
+                // Helper to update the String Header checkbox and badge
+                function updateHeaderState() {
+                    const total = checkboxes.length;
+                    const checkedCount = checkboxes.filter(c => c.checked).length;
+                    
+                    badge.textContent = `${checkedCount}/${total}`;
+                    
+                    if (checkedCount === total) {
+                        stringCheckbox.checked = true;
+                        stringCheckbox.indeterminate = false;
+                    } else if (checkedCount === 0) {
+                        stringCheckbox.checked = false;
+                        stringCheckbox.indeterminate = false;
+                    } else {
+                        stringCheckbox.checked = false;
+                        stringCheckbox.indeterminate = true;
+                    }
+                }
+
+                updateHeaderState();
+
+                // Toggle string expand/collapse on click
+                const toggleExpand = (e) => {
+                    if (e.target === stringCheckbox) return;
+                    const isCollapsed = listDiv.classList.contains('hidden');
+                    if (isCollapsed) {
+                        listDiv.classList.remove('hidden');
+                        expandBtn.textContent = '▼';
+                    } else {
+                        listDiv.classList.add('hidden');
+                        expandBtn.textContent = '▶';
+                    }
+                };
+                headerRow.addEventListener('click', toggleExpand);
+
+                // Click handler for String Checkbox
+                stringCheckbox.addEventListener('change', (e) => {
+                    const checked = stringCheckbox.checked;
+                    checkboxes.forEach(cb => {
+                        if (cb.checked !== checked) {
+                            cb.checked = checked;
+                            const dsIdx = parseInt(cb.dataset.dsIdx);
+                            chart.data.datasets[dsIdx].hidden = !checked;
+                        }
+                    });
+                    chart.update();
+                    updateHeaderState();
+                });
+
+                // Module Checkbox Interaction with Shift-Click
+                listDiv.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox') return;
+
+                    const clickedCb = e.target;
+                    const dsIdx = parseInt(clickedCb.dataset.dsIdx);
+                    chart.data.datasets[dsIdx].hidden = !clickedCb.checked;
+
+                    if (e.shiftKey && lastCheckedCheckbox) {
+                        const allCbs = Array.from(sidebar.querySelectorAll('.module-checkbox'));
+                        const start = allCbs.indexOf(lastCheckedCheckbox);
+                        const end = allCbs.indexOf(clickedCb);
+                        
+                        if (start !== -1 && end !== -1) {
+                            const [minIdx, maxIdx] = [Math.min(start, end), Math.max(start, end)];
+                            const targetState = clickedCb.checked;
+                            
+                            for (let i = minIdx; i <= maxIdx; i++) {
+                                const targetCb = allCbs[i];
+                                if (targetCb.checked !== targetState) {
+                                    targetCb.checked = targetState;
+                                    const targetDsIdx = parseInt(targetCb.dataset.dsIdx);
+                                    chart.data.datasets[targetDsIdx].hidden = !targetState;
+                                }
+                            }
+                        }
+                    }
+
+                    lastCheckedCheckbox = clickedCb;
+                    chart.update();
+                    
+                    // Trigger custom updates on all string headers in the sidebar
+                    sidebar.querySelectorAll('.string-checkbox').forEach(sc => {
+                        if (sc.updateHeader) sc.updateHeader();
+                    });
+                });
+
+                stringCheckbox.updateHeader = updateHeaderState;
+            });
+
+            sidebar.appendChild(containerDiv);
         }
 
         function renderChart(canvasId, datasets, yTitle) {

@@ -39,8 +39,8 @@ A local replacement for the SMA Sunny Portal, providing real-time and historical
 
 The scraper runs inside the `scraper` container. You can adjust its behavior in `docker-compose.yml` or by passing environment variables:
 
-- `INVERTER_IP`: The local IP of your SMA inverter (default: `192.168.1.83`).
-- `INVERTER_PASSWORD`: Your inverter's User password (default: `User!2345`).
+- `INVERTER_IP`: The local IP of your SMA inverter (default: `192.168.1.183`).
+- `INVERTER_PASSWORD`: Your inverter's User password (default: `xyzzy`).
 - `SCRAPE_INTERVAL`: How often to poll the inverter (in minutes).
 
 ## Technical Details

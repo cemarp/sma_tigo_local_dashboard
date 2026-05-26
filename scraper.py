@@ -55,11 +55,6 @@ def parse_args():
         help=f"Output CSV file path (default: {DEFAULT_CSV_FILE})"
     )
     parser.add_argument(
-        "--db",
-        default="sma_inverter_data.db",
-        help="SQLite database path for the dashboard backend"
-    )
-    parser.add_argument(
         "--no-discover",
         action="store_true",
         help="Disable automatic subnet discovery if target IP is down"
@@ -521,52 +516,6 @@ def write_to_csv_wide(records, output_file):
         print(f"[Error] Failed to append wide format row to CSV: {e}")
 
 
-def write_to_sqlite(records, db_path):
-    """Writes/appends records to the SQLite database for the local dashboard backend."""
-    if not records:
-        return
-    import sqlite3
-    try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS measurements (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT,
-                category TEXT,
-                parameter TEXT,
-                value TEXT,
-                unit TEXT,
-                raw_value TEXT,
-                scale REAL,
-                key TEXT
-            )
-        ''')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_timestamp ON measurements(timestamp)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_key ON measurements(key)')
-        
-        # Insert records
-        for r in records:
-            cursor.execute('''
-                INSERT INTO measurements (timestamp, category, parameter, value, unit, raw_value, scale, key)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                r['Timestamp'], 
-                r['Category'], 
-                r['Parameter'], 
-                r['Value'], 
-                r['Unit'], 
-                str(r['Raw Value']), 
-                r['Scale'], 
-                r['Key']
-            ))
-        conn.commit()
-        conn.close()
-        print(f"[SQLite] Successfully appended {len(records)} records to {db_path}.")
-    except Exception as e:
-        print(f"[Error] Failed to write data to SQLite: {e}")
-
-
 def run_scrape(args):
     """Executes a single scrape cycle: discovers IP, authenticates, fetches telemetry, writes to CSV, and logs out."""
     # Establish base Session with connection pooling
@@ -611,10 +560,6 @@ def run_scrape(args):
             write_to_csv_wide(records, args.output)
         else:
             write_to_csv(records, args.output)
-            
-        # Also save to SQLite database if configured
-        if args.db:
-            write_to_sqlite(records, args.db)
         
     finally:
         # Graceful logout to prevent inverter session locking

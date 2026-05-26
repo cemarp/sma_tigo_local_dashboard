@@ -29,13 +29,20 @@
             font-weight: bold;
         }
         .chart-container {
-            height: 300px;
+            height: 350px;
             position: relative;
+            resize: both;
+            overflow: hidden;
+            min-height: 200px;
+            min-width: 300px;
+            background: white;
+            display: flex;
+            flex-direction: column;
         }
     </style>
 </head>
 <body class="bg-gray-100 p-4">
-    <div class="max-w-6xl mx-auto space-y-6">
+    <div class="max-w-[1400px] mx-auto space-y-6">
         <header class="flex justify-between items-center bg-white p-4 rounded shadow">
             <h1 class="text-2xl font-bold">PV System Overview | Complete PV system</h1>
             <div class="flex items-center space-x-4">
@@ -53,14 +60,18 @@
         <div class="bg-white p-4 rounded shadow">
             <div class="flex flex-wrap gap-4 mb-4 items-center">
                 <div class="flex items-center space-x-2">
-                    <label for="metric-select" class="font-bold">Module Metric:</label>
-                    <select id="metric-select" class="border rounded p-1">
-                        <!-- Options will be populated from config -->
-                    </select>
+                    <label for="date-select" class="font-bold">Start Date:</label>
+                    <input type="date" id="date-select" class="border rounded p-1">
                 </div>
                 <div class="flex items-center space-x-2">
-                    <label for="date-select" class="font-bold">Date:</label>
-                    <input type="date" id="date-select" class="border rounded p-1">
+                    <label for="days-select" class="font-bold">Duration:</label>
+                    <select id="days-select" class="border rounded p-1">
+                        <option value="1">1 Day</option>
+                        <option value="2">2 Days</option>
+                        <option value="3">3 Days</option>
+                        <option value="4">4 Days</option>
+                        <option value="5">5 Days</option>
+                    </select>
                 </div>
                 <div class="flex items-center space-x-2">
                     <input type="checkbox" id="live-toggle" class="form-checkbox h-4 w-4">
@@ -68,28 +79,88 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div class="chart-container border p-2 rounded">
+            <!-- Top Level System Charts -->
+            <div class="space-y-8 mb-8">
+                <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
                     <h2 class="text-center font-bold mb-2">Power Analysis (W)</h2>
-                    <canvas id="power-chart"></canvas>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="power-chart"></canvas>
+                    </div>
                 </div>
-                <div class="chart-container border p-2 rounded">
+                <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
                     <h2 class="text-center font-bold mb-2">String Voltages (V)</h2>
-                    <canvas id="voltage-chart"></canvas>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="voltage-chart"></canvas>
+                    </div>
                 </div>
-                <div class="chart-container border p-2 rounded">
+                <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
                     <h2 class="text-center font-bold mb-2">String Currents (A)</h2>
-                    <canvas id="current-chart"></canvas>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="current-chart"></canvas>
+                    </div>
                 </div>
             </div>
 
-            <div id="module-display" class="space-y-4">
-                <!-- Strings and Modules will be rendered here -->
+            <div class="border-t pt-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Module Level Display</h2>
+                    <div class="flex items-center space-x-2">
+                        <label for="metric-select" class="font-bold text-sm">Metric:</label>
+                        <select id="metric-select" class="border rounded p-1 text-sm">
+                            <!-- Options will be populated from config -->
+                        </select>
+                    </div>
+                </div>
+                <div id="module-display" class="space-y-4">
+                    <!-- Strings and Modules will be rendered here -->
+                </div>
             </div>
 
+            <!-- Time Scrubber -->
             <div class="mt-8 bg-gray-50 p-4 rounded border">
                 <input type="range" id="time-scrubber" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" min="0" max="0" step="1">
                 <div id="scrubber-time" class="text-center font-bold mt-2 text-lg">--:--:--</div>
+            </div>
+
+            <!-- Module Level Comparison Charts -->
+            <div class="mt-12 space-y-8 border-t pt-8">
+                <h2 class="text-xl font-bold text-center">Module Comparison History</h2>
+                
+                <div class="chart-container border rounded shadow-sm w-full" style="width: 100%">
+                    <div class="p-2 border-b bg-gray-50 flex justify-between items-center">
+                        <h2 class="font-bold text-gray-800">Module Power (W)</h2>
+                    </div>
+                    <div class="flex flex-1 min-h-0">
+                        <div class="flex-1 min-w-0 relative p-2">
+                            <canvas id="module-power-history-chart"></canvas>
+                        </div>
+                        <div class="w-60 border-l bg-gray-50 p-2 overflow-y-auto" id="module-power-history-sidebar"></div>
+                    </div>
+                </div>
+                
+                <div class="chart-container border rounded shadow-sm w-full" style="width: 100%">
+                    <div class="p-2 border-b bg-gray-50 flex justify-between items-center">
+                        <h2 class="font-bold text-gray-800">Module Voltage (V)</h2>
+                    </div>
+                    <div class="flex flex-1 min-h-0">
+                        <div class="flex-1 min-w-0 relative p-2">
+                            <canvas id="module-voltage-history-chart"></canvas>
+                        </div>
+                        <div class="w-60 border-l bg-gray-50 p-2 overflow-y-auto" id="module-voltage-history-sidebar"></div>
+                    </div>
+                </div>
+                
+                <div class="chart-container border rounded shadow-sm w-full" style="width: 100%">
+                    <div class="p-2 border-b bg-gray-50 flex justify-between items-center">
+                        <h2 class="font-bold text-gray-800">Module Temperature (°C)</h2>
+                    </div>
+                    <div class="flex flex-1 min-h-0">
+                        <div class="flex-1 min-w-0 relative p-2">
+                            <canvas id="module-temp-history-chart"></canvas>
+                        </div>
+                        <div class="w-60 border-l bg-gray-50 p-2 overflow-y-auto" id="module-temp-history-sidebar"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -98,11 +169,7 @@
         let config = null;
         let dailyData = [];
         let timestamps = [];
-        let charts = {
-            power: null,
-            voltage: null,
-            current: null
-        };
+        let charts = {};
         let selectedMetricId = 'power';
         let refreshInterval = null;
 
@@ -124,11 +191,25 @@
                 updateDisplay();
             });
 
-            // Set default date
+            // Set default date to the latest date available in the database (fallback to now)
             const dateInput = document.getElementById('date-select');
-            const now = new Date();
-            dateInput.value = now.toISOString().split('T')[0];
-            dateInput.addEventListener('change', loadDailyData);
+            const daysSelect = document.getElementById('days-select');
+            
+            let defaultDate = new Date().toISOString().split('T')[0];
+            try {
+                const latestRes = await fetch('/data/latest');
+                const latestData = await latestRes.json();
+                if (latestData && latestData.length > 0) {
+                    const latestTs = latestData[0].timestamp;
+                    defaultDate = latestTs.split('T')[0];
+                }
+            } catch (e) {
+                console.error("Error fetching latest date, falling back to now:", e);
+            }
+            dateInput.value = defaultDate;
+
+            dateInput.addEventListener('change', loadData);
+            daysSelect.addEventListener('change', loadData);
 
             document.getElementById('live-toggle').addEventListener('change', (e) => {
                 if (e.target.checked) {
@@ -138,16 +219,34 @@
                 }
             });
 
-            await loadDailyData();
+            await loadData();
 
             document.getElementById('time-scrubber').addEventListener('input', (e) => {
                 updateScrubber(parseInt(e.target.value));
+            });
+
+            // Resize observers for charts
+            document.querySelectorAll('.chart-container').forEach(container => {
+                let lastWidth = container.clientWidth;
+                let lastHeight = container.clientHeight;
+                new ResizeObserver(() => {
+                    const width = container.clientWidth;
+                    const height = container.clientHeight;
+                    if (width !== lastWidth || height !== lastHeight) {
+                        lastWidth = width;
+                        lastHeight = height;
+                        const canvas = container.querySelector('canvas');
+                        if (canvas && charts[canvas.id]) {
+                            charts[canvas.id].resize();
+                        }
+                    }
+                }).observe(container);
             });
         }
 
         function startLiveRefresh() {
             document.getElementById('live-indicator').classList.remove('hidden');
-            refreshInterval = setInterval(loadDailyData, 30000); // 30 seconds
+            refreshInterval = setInterval(loadData, 30000);
         }
 
         function stopLiveRefresh() {
@@ -155,12 +254,12 @@
             if (refreshInterval) clearInterval(refreshInterval);
         }
 
-        async function loadDailyData() {
+        async function loadData() {
             const date = document.getElementById('date-select').value;
-            const res = await fetch(`/data/daily?date=${date}`);
+            const days = document.getElementById('days-select').value;
+            const res = await fetch(`/data/daily?date=${date}&days=${days}`);
             const rawData = await res.json();
 
-            // Group data by timestamp
             const grouped = {};
             rawData.forEach(r => {
                 if (!grouped[r.timestamp]) {
@@ -172,15 +271,15 @@
             const newTimestamps = Object.keys(grouped).sort();
             if (newTimestamps.length === 0) return;
 
-            const isAtEnd = parseInt(document.getElementById('time-scrubber').value) === timestamps.length - 1;
+            const scrubber = document.getElementById('time-scrubber');
+            const isAtEnd = parseInt(scrubber.value) === timestamps.length - 1;
 
             timestamps = newTimestamps;
             dailyData = timestamps.map(ts => grouped[ts]);
 
-            const scrubber = document.getElementById('time-scrubber');
             scrubber.max = timestamps.length - 1;
 
-            if (isAtEnd || timestamps.length === 1) {
+            if (isAtEnd || timestamps.length === 1 || scrubber.value > scrubber.max) {
                 scrubber.value = timestamps.length - 1;
                 updateScrubber(timestamps.length - 1);
             } else {
@@ -190,7 +289,7 @@
             updateCharts();
 
             if (timestamps.length > 0) {
-                document.getElementById('last-update').textContent = `Last update: ${new Date(timestamps[timestamps.length-1]).toLocaleTimeString()}`;
+                document.getElementById('last-update').textContent = `Last update: ${new Date(timestamps[timestamps.length-1]).toLocaleString()}`;
             }
         }
 
@@ -204,7 +303,8 @@
                         y: parseFloat(dailyData[i].find(r => r.category.includes('AC Side') && r.parameter.includes(config.inverter_power.parameter))?.value || 0)
                     })),
                     borderColor: '#3b82f6',
-                    tension: 0.4
+                    tension: 0.1,
+                    borderWidth: 2
                 },
                 {
                     label: 'Module DC Sum (W)',
@@ -216,11 +316,11 @@
                         return { x: new Date(ts), y: sum };
                     }),
                     borderColor: '#ef4444',
-                    tension: 0.4
+                    tension: 0.1,
+                    borderWidth: 2
                 }
             ];
 
-            // Add String Powers
             config.strings.forEach((s, idx) => {
                 const colors = ['#10b981', '#f59e0b', '#8b5cf6'];
                 powerDatasets.push({
@@ -231,11 +331,11 @@
                     })),
                     borderColor: colors[idx % colors.length],
                     borderDash: [5, 5],
-                    tension: 0.4
+                    tension: 0.1,
+                    borderWidth: 1.5
                 });
             });
-
-            renderChart('power-chart', 'power', powerDatasets, 'Power (W)');
+            renderChart('power-chart', powerDatasets, 'Power (W)');
 
             // 2. Voltage Chart
             const voltageDatasets = config.strings.map((s, idx) => {
@@ -247,10 +347,10 @@
                         y: parseFloat(dailyData[i].find(r => r.category === s.dc_metrics.voltage.category && r.parameter.includes(s.dc_metrics.voltage.parameter))?.value || 0)
                     })),
                     borderColor: colors[idx % colors.length],
-                    tension: 0.4
+                    tension: 0.1
                 };
             });
-            renderChart('voltage-chart', 'voltage', voltageDatasets, 'Voltage (V)');
+            renderChart('voltage-chart', voltageDatasets, 'Voltage (V)');
 
             // 3. Current Chart
             const currentDatasets = config.strings.map((s, idx) => {
@@ -262,17 +362,307 @@
                         y: parseFloat(dailyData[i].find(r => r.category === s.dc_metrics.current.category && r.parameter.includes(s.dc_metrics.current.parameter))?.value || 0)
                     })),
                     borderColor: colors[idx % colors.length],
-                    tension: 0.4
+                    tension: 0.1
                 };
             });
-            renderChart('current-chart', 'current', currentDatasets, 'Current (A)');
+            renderChart('current-chart', currentDatasets, 'Current (A)');
+
+            // Module History Charts
+            updateModuleHistoryCharts();
         }
 
-        function renderChart(canvasId, chartKey, datasets, yTitle) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            if (charts[chartKey]) charts[chartKey].destroy();
+        function updateModuleHistoryCharts() {
+            const metrics = [
+                { id: 'power', canvasId: 'module-power-history-chart', title: 'Power (W)' },
+                { id: 'voltage', canvasId: 'module-voltage-history-chart', title: 'Voltage (V)' },
+                { id: 'temperature', canvasId: 'module-temp-history-chart', title: 'Temp (°C)' }
+            ];
 
-            charts[chartKey] = new Chart(ctx, {
+            metrics.forEach(mInfo => {
+                const metric = config.metrics.find(m => m.id === mInfo.id);
+                const datasets = [];
+
+                config.strings.forEach(string => {
+                    string.modules.forEach(modIdx => {
+                        datasets.push({
+                            label: `M#${modIdx}`,
+                            data: timestamps.map((ts, i) => {
+                                const m = dailyData[i].find(r => {
+                                    if (r.category !== metric.scraper_category) return false;
+                                    const paramLower = r.parameter.toLowerCase();
+                                    const metricLower = metric.scraper_param.toLowerCase();
+                                    if (!paramLower.includes(metricLower)) return false;
+                                    const regex = new RegExp(`#${modIdx}(\\D|$)`);
+                                    return regex.test(r.parameter);
+                                });
+                                return { x: new Date(ts), y: m ? parseFloat(m.value) : null };
+                            }),
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            tension: 0.1,
+                            hidden: true // Default to hidden to avoid clutter
+                        });
+                    });
+                });
+                // Show first few modules by default
+                for(let i=0; i<Math.min(5, datasets.length); i++) datasets[i].hidden = false;
+
+                renderChart(mInfo.canvasId, datasets, mInfo.title);
+                buildSidebar(mInfo.canvasId, mInfo.canvasId.replace('-chart', '-sidebar'));
+            });
+        }
+
+        function buildSidebar(canvasId, sidebarId) {
+            const sidebar = document.getElementById(sidebarId);
+            sidebar.innerHTML = '';
+            
+            const chart = charts[canvasId];
+            if (!chart) return;
+
+            const datasets = chart.data.datasets;
+            
+            // Map module number to its dataset index in chart
+            const modToDatasetIdx = {};
+            let currentIdx = 0;
+            config.strings.forEach(string => {
+                string.modules.forEach(modIdx => {
+                    modToDatasetIdx[modIdx] = currentIdx++;
+                });
+            });
+
+            // Container for all elements
+            const containerDiv = document.createElement('div');
+            containerDiv.className = 'space-y-3';
+
+            let lastCheckedCheckbox = null;
+
+            config.strings.forEach(string => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'border border-gray-200 rounded p-1.5 bg-white';
+
+                // String Header Row
+                const headerRow = document.createElement('div');
+                headerRow.className = 'flex items-center justify-between hover:bg-gray-100 p-1 rounded cursor-pointer select-none';
+
+                const leftSection = document.createElement('div');
+                leftSection.className = 'flex items-center space-x-1.5';
+
+                const expandBtn = document.createElement('span');
+                expandBtn.className = 'expand-btn text-[10px] w-4 text-center font-bold text-gray-500';
+                expandBtn.textContent = '▼';
+
+                const stringCheckbox = document.createElement('input');
+                stringCheckbox.type = 'checkbox';
+                stringCheckbox.className = 'string-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'font-semibold text-gray-800 text-[11px]';
+                titleSpan.textContent = string.name;
+
+                leftSection.appendChild(expandBtn);
+                leftSection.appendChild(stringCheckbox);
+                leftSection.appendChild(titleSpan);
+
+                const rightSection = document.createElement('div');
+                rightSection.className = 'flex items-center space-x-1';
+
+                const badge = document.createElement('span');
+                badge.className = 'text-[9px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full count-badge font-medium';
+
+                rightSection.appendChild(badge);
+
+                headerRow.appendChild(leftSection);
+                headerRow.appendChild(rightSection);
+                groupDiv.appendChild(headerRow);
+
+                // Modules list container
+                const listDiv = document.createElement('div');
+                listDiv.className = 'pl-5 pr-1 mt-1 space-y-1 modules-list';
+
+                const checkboxes = [];
+
+                string.modules.forEach(modIdx => {
+                    const dsIdx = modToDatasetIdx[modIdx];
+                    if (dsIdx === undefined) return;
+
+                    const dataset = datasets[dsIdx];
+                    
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer select-none text-[11px]';
+
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.className = 'module-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+                    cb.checked = !dataset.hidden;
+                    cb.dataset.mod = modIdx;
+                    cb.dataset.dsIdx = dsIdx;
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'text-gray-700';
+                    nameSpan.textContent = `M#${modIdx}`;
+
+                    const colorBlock = document.createElement('span');
+                    colorBlock.className = 'w-3 h-1.5 rounded-sm inline-block';
+                    colorBlock.style.backgroundColor = dataset.borderColor || '#ccc';
+
+                    label.appendChild(cb);
+                    label.appendChild(colorBlock);
+                    label.appendChild(nameSpan);
+                    listDiv.appendChild(label);
+
+                    checkboxes.push(cb);
+
+                    // Hover effects to highlight this module's trace
+                    label.addEventListener('mouseenter', () => {
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (ds.hidden) return; // Do nothing if trace is not currently being drawn
+
+                        if (!ds.originalBorderWidth) {
+                            ds.originalBorderWidth = ds.borderWidth || 1;
+                        }
+                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Highlight trace
+                        chart.update('none');
+                    });
+
+                    label.addEventListener('mouseleave', () => {
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (ds.originalBorderWidth !== undefined) {
+                            ds.borderWidth = ds.originalBorderWidth; // Restore trace
+                            chart.update('none');
+                        }
+                    });
+                });
+
+                groupDiv.appendChild(listDiv);
+                containerDiv.appendChild(groupDiv);
+
+                // Helper to update the String Header checkbox and badge
+                function updateHeaderState() {
+                    const total = checkboxes.length;
+                    const checkedCount = checkboxes.filter(c => c.checked).length;
+                    
+                    badge.textContent = `${checkedCount}/${total}`;
+                    
+                    if (checkedCount === total) {
+                        stringCheckbox.checked = true;
+                        stringCheckbox.indeterminate = false;
+                    } else if (checkedCount === 0) {
+                        stringCheckbox.checked = false;
+                        stringCheckbox.indeterminate = false;
+                    } else {
+                        stringCheckbox.checked = false;
+                        stringCheckbox.indeterminate = true;
+                    }
+                }
+
+                updateHeaderState();
+
+                // Toggle string expand/collapse on click
+                const toggleExpand = (e) => {
+                    if (e.target === stringCheckbox) return;
+                    const isCollapsed = listDiv.classList.contains('hidden');
+                    if (isCollapsed) {
+                        listDiv.classList.remove('hidden');
+                        expandBtn.textContent = '▼';
+                    } else {
+                        listDiv.classList.add('hidden');
+                        expandBtn.textContent = '▶';
+                    }
+                };
+                headerRow.addEventListener('click', toggleExpand);
+
+                // Hover effects on String Header to highlight all active module traces in this string group
+                headerRow.addEventListener('mouseenter', (e) => {
+                    if (e.target === stringCheckbox) return;
+                    checkboxes.forEach(cb => {
+                        if (!cb.checked) return; // Only highlight visible traces
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (!ds.originalBorderWidth) {
+                            ds.originalBorderWidth = ds.borderWidth || 1;
+                        }
+                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Highlight trace
+                    });
+                    chart.update('none');
+                });
+
+                headerRow.addEventListener('mouseleave', () => {
+                    checkboxes.forEach(cb => {
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (ds.originalBorderWidth !== undefined) {
+                            ds.borderWidth = ds.originalBorderWidth; // Restore trace
+                        }
+                    });
+                    chart.update('none');
+                });
+
+                // Click handler for String Checkbox
+                stringCheckbox.addEventListener('change', (e) => {
+                    const checked = stringCheckbox.checked;
+                    checkboxes.forEach(cb => {
+                        if (cb.checked !== checked) {
+                            cb.checked = checked;
+                            const dsIdx = parseInt(cb.dataset.dsIdx);
+                            chart.data.datasets[dsIdx].hidden = !checked;
+                        }
+                    });
+                    chart.update();
+                    updateHeaderState();
+                });
+
+                // Module Checkbox Interaction with Shift-Click
+                listDiv.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox') return;
+
+                    const clickedCb = e.target;
+                    const dsIdx = parseInt(clickedCb.dataset.dsIdx);
+                    chart.data.datasets[dsIdx].hidden = !clickedCb.checked;
+
+                    if (e.shiftKey && lastCheckedCheckbox) {
+                        const allCbs = Array.from(sidebar.querySelectorAll('.module-checkbox'));
+                        const start = allCbs.indexOf(lastCheckedCheckbox);
+                        const end = allCbs.indexOf(clickedCb);
+                        
+                        if (start !== -1 && end !== -1) {
+                            const [minIdx, maxIdx] = [Math.min(start, end), Math.max(start, end)];
+                            const targetState = clickedCb.checked;
+                            
+                            for (let i = minIdx; i <= maxIdx; i++) {
+                                const targetCb = allCbs[i];
+                                if (targetCb.checked !== targetState) {
+                                    targetCb.checked = targetState;
+                                    const targetDsIdx = parseInt(targetCb.dataset.dsIdx);
+                                    chart.data.datasets[targetDsIdx].hidden = !targetState;
+                                }
+                            }
+                        }
+                    }
+
+                    lastCheckedCheckbox = clickedCb;
+                    chart.update();
+                    
+                    // Trigger custom updates on all string headers in the sidebar
+                    sidebar.querySelectorAll('.string-checkbox').forEach(sc => {
+                        if (sc.updateHeader) sc.updateHeader();
+                    });
+                });
+
+                stringCheckbox.updateHeader = updateHeaderState;
+            });
+
+            sidebar.appendChild(containerDiv);
+        }
+
+        function renderChart(canvasId, datasets, yTitle) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if (charts[canvasId]) charts[canvasId].destroy();
+
+            const isMultiDay = document.getElementById('days-select').value > 1;
+
+            charts[canvasId] = new Chart(ctx, {
                 type: 'line',
                 data: { datasets },
                 options: {
@@ -280,11 +670,57 @@
                     maintainAspectRatio: false,
                     elements: { point: { radius: 0 } },
                     scales: {
-                        x: { type: 'time', time: { unit: 'hour' } },
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: isMultiDay ? 'day' : 'hour',
+                                displayFormats: {
+                                    day: 'MMM d',
+                                    hour: 'HH:mm'
+                                }
+                            }
+                        },
                         y: { beginAtZero: true, title: { display: true, text: yTitle } }
                     },
                     plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 10,
+                                font: { size: 10 },
+                                usePointStyle: true
+                            },
+                            onHover: (event, legendItem, legend) => {
+                                const chart = legend.chart;
+                                const dsIdx = legendItem.datasetIndex;
+                                if (!chart.isDatasetVisible(dsIdx)) return;
+                                
+                                chart.data.datasets.forEach((ds, idx) => {
+                                    if (!ds.originalBorderWidth) {
+                                        ds.originalBorderWidth = ds.borderWidth || 1.5;
+                                    }
+                                    if (idx === dsIdx) {
+                                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Highlight trace
+                                    } else {
+                                        ds.borderWidth = ds.originalBorderWidth;
+                                    }
+                                });
+                                chart.update('none');
+                            },
+                            onLeave: (event, legendItem, legend) => {
+                                const chart = legend.chart;
+                                chart.data.datasets.forEach((ds) => {
+                                    if (ds.originalBorderWidth !== undefined) {
+                                        ds.borderWidth = ds.originalBorderWidth; // Restore trace
+                                    }
+                                });
+                                chart.update('none');
+                            }
+                        },
+                        tooltip: {
+                            intersect: false,
+                            mode: 'index'
+                        }
                     },
                     interaction: { intersect: false, mode: 'index' }
                 }
@@ -294,7 +730,8 @@
         function updateScrubber(index) {
             if (index < 0 || index >= timestamps.length) return;
             const ts = timestamps[index];
-            document.getElementById('scrubber-time').textContent = new Date(ts).toLocaleTimeString();
+            const date = new Date(ts);
+            document.getElementById('scrubber-time').textContent = date.toLocaleString();
             updateDisplay(index);
         }
 

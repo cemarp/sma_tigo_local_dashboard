@@ -56,21 +56,32 @@ async def get_latest_data():
     return rows
 
 @app.get("/data/daily")
-async def get_daily_data(date: str = Query(None)):
+async def get_daily_data(date: str = Query(None), days: int = Query(1)):
     if not date:
         date = datetime.now().strftime("%Y-%m-%d")
+
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    # Support both ISO and custom formats
-    cursor.execute("SELECT * FROM measurements WHERE timestamp LIKE ?", (f"{date}%",))
+
+    if days == 1:
+        cursor.execute("SELECT * FROM measurements WHERE timestamp LIKE ? ORDER BY timestamp ASC", (f"{date}%",))
+    else:
+        # Calculate end date
+        from datetime import timedelta
+        start_dt = datetime.strptime(date, "%Y-%m-%d")
+        end_dt = start_dt + timedelta(days=days-1)
+        end_date = end_dt.strftime("%Y-%m-%d")
+        cursor.execute("SELECT * FROM measurements WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC",
+                       (f"{date}T00:00:00", f"{end_date}T23:59:59"))
+
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return rows
 
 @app.get("/")
 async def read_index():
-    return FileResponse("static/index.html")
+    return FileResponse("static/index.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 # Serve static files (HTML, JS, CSS)
 if not os.path.exists("static"):

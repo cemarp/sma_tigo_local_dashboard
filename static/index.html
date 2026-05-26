@@ -511,6 +511,28 @@
                     listDiv.appendChild(label);
 
                     checkboxes.push(cb);
+
+                    // Hover effects to highlight this module's trace
+                    label.addEventListener('mouseenter', () => {
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (ds.hidden) return; // Do nothing if trace is not currently being drawn
+
+                        if (!ds.originalBorderWidth) {
+                            ds.originalBorderWidth = ds.borderWidth || 1;
+                        }
+                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Highlight trace
+                        chart.update('none');
+                    });
+
+                    label.addEventListener('mouseleave', () => {
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (ds.originalBorderWidth !== undefined) {
+                            ds.borderWidth = ds.originalBorderWidth; // Restore trace
+                            chart.update('none');
+                        }
+                    });
                 });
 
                 groupDiv.appendChild(listDiv);
@@ -550,6 +572,32 @@
                     }
                 };
                 headerRow.addEventListener('click', toggleExpand);
+
+                // Hover effects on String Header to highlight all active module traces in this string group
+                headerRow.addEventListener('mouseenter', (e) => {
+                    if (e.target === stringCheckbox) return;
+                    checkboxes.forEach(cb => {
+                        if (!cb.checked) return; // Only highlight visible traces
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (!ds.originalBorderWidth) {
+                            ds.originalBorderWidth = ds.borderWidth || 1;
+                        }
+                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Highlight trace
+                    });
+                    chart.update('none');
+                });
+
+                headerRow.addEventListener('mouseleave', () => {
+                    checkboxes.forEach(cb => {
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (ds.originalBorderWidth !== undefined) {
+                            ds.borderWidth = ds.originalBorderWidth; // Restore trace
+                        }
+                    });
+                    chart.update('none');
+                });
 
                 // Click handler for String Checkbox
                 stringCheckbox.addEventListener('change', (e) => {
@@ -641,6 +689,32 @@
                                 boxWidth: 10,
                                 font: { size: 10 },
                                 usePointStyle: true
+                            },
+                            onHover: (event, legendItem, legend) => {
+                                const chart = legend.chart;
+                                const dsIdx = legendItem.datasetIndex;
+                                if (!chart.isDatasetVisible(dsIdx)) return;
+                                
+                                chart.data.datasets.forEach((ds, idx) => {
+                                    if (!ds.originalBorderWidth) {
+                                        ds.originalBorderWidth = ds.borderWidth || 1.5;
+                                    }
+                                    if (idx === dsIdx) {
+                                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Highlight trace
+                                    } else {
+                                        ds.borderWidth = ds.originalBorderWidth;
+                                    }
+                                });
+                                chart.update('none');
+                            },
+                            onLeave: (event, legendItem, legend) => {
+                                const chart = legend.chart;
+                                chart.data.datasets.forEach((ds) => {
+                                    if (ds.originalBorderWidth !== undefined) {
+                                        ds.borderWidth = ds.originalBorderWidth; // Restore trace
+                                    }
+                                });
+                                chart.update('none');
                             }
                         },
                         tooltip: {

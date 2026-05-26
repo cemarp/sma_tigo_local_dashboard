@@ -11,7 +11,7 @@ A local replacement for the SMA Sunny Portal, providing real-time and historical
     - **String Voltages:** Real-time tracking of DC voltages across all strings.
     - **String Currents:** Real-time tracking of DC currents across all strings.
     - **Module History:** Comparative graphs for individual module Power, Voltage, and Temperature.
-    - **Resizable Graphs:** All charts can be resized by the user for detailed analysis.
+    - **Moveable Dashboard:** Drag-and-drop and resize charts to create your custom layout (Grafana-style).
 - **Multi-Day Analysis:** Select up to 5 days of data for side-by-side performance comparison.
 - **Time Scrubber:** Historical playback of any day's or multi-day performance.
 - **Live Mode:** Automatic data refresh for real-time monitoring.
@@ -39,8 +39,8 @@ A local replacement for the SMA Sunny Portal, providing real-time and historical
 
 The scraper runs inside the `scraper` container. You can adjust its behavior in `docker-compose.yml` or by passing environment variables:
 
-- `INVERTER_IP`: The local IP of your SMA inverter (default: `192.168.1.83`).
-- `INVERTER_PASSWORD`: Your inverter's User password (default: `User!2345`).
+- `INVERTER_IP`: The local IP of your SMA inverter.
+- `INVERTER_PASSWORD`: Your inverter's User password.
 - `SCRAPE_INTERVAL`: How often to poll the inverter (in minutes).
 
 ## Technical Details

@@ -8,8 +8,8 @@ from datetime import datetime
 
 app = FastAPI()
 
-DB_PATH = "sma_inverter_data.db"
-CONFIG_PATH = "layout.json"
+DB_PATH = os.environ.get("DATABASE_URL", "sma_inverter_data.db")
+CONFIG_PATH = os.environ.get("LAYOUT_CONFIG", "layout.json")
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -81,7 +81,7 @@ async def get_daily_data(date: str = Query(None), days: int = Query(1)):
 
 @app.get("/")
 async def read_index():
-    return FileResponse("static/index.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+    return FileResponse("static/index.html")
 
 # Serve static files (HTML, JS, CSS)
 if not os.path.exists("static"):

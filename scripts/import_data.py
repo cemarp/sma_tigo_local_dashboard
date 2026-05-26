@@ -1,24 +1,12 @@
 import csv
 import sqlite3
 import re
+import sys
 
 def import_csv_to_sqlite(csv_filepath, db_filepath, module_serial):
     conn = sqlite3.connect(db_filepath)
     cursor = conn.cursor()
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS measurements (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT,
-            category TEXT,
-            parameter TEXT,
-            value TEXT,
-            unit TEXT,
-            raw_value TEXT,
-            scale REAL,
-            key TEXT
-        )
-    ''')
     # Clear existing data to avoid duplicates during testing
     cursor.execute("DELETE FROM measurements")
 
@@ -57,4 +45,16 @@ def import_csv_to_sqlite(csv_filepath, db_filepath, module_serial):
     print(f"Imported data from {csv_filepath} to {db_filepath}")
 
 if __name__ == "__main__":
-    import_csv_to_sqlite('sma_inverter_data_10hour_run.csv', 'sma_inverter_data.db', '3014292153')
+    import argparse
+    parser = argparse.ArgumentParser(description="Import SMA CSV data to SQLite")
+    parser.add_argument("csv", help="Path to the CSV file")
+    parser.add_argument("--db", default="sma_inverter_data.db", help="Path to the SQLite database")
+    parser.add_argument("--serial", default="3014292153", help="Inverter serial number")
+    args = parser.parse_args()
+
+    import os
+    if not os.path.exists(args.csv):
+        print(f"Error: File {args.csv} not found.")
+        sys.exit(1)
+
+    import_csv_to_sqlite(args.csv, args.db, args.serial)

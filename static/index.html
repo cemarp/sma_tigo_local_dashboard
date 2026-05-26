@@ -7,6 +7,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- GridStack.js -->
+    <link href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.js"></script>
     <style>
         .module-grid {
             display: grid;
@@ -28,21 +32,42 @@
         .module-value {
             font-weight: bold;
         }
-        .chart-container {
-            height: 350px;
-            position: relative;
-            resize: both;
-            overflow: hidden;
-            min-height: 200px;
-            min-width: 300px;
-            background: white;
+        .grid-stack {
+            background-color: #f3f4f6;
+            padding: 10px;
+            border-radius: 0.5rem;
+            min-height: 400px;
+        }
+        .grid-stack-item-content {
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+        }
+        .chart-wrapper {
+            flex-grow: 1;
+            min-height: 0;
+            position: relative;
+            width: 100%;
+        }
+        .drag-handle {
+            cursor: move;
+            background-color: #f9fafb;
+            border-bottom: 1px solid #f3f4f6;
+            margin: -0.5rem -0.5rem 0.5rem -0.5rem;
+            padding: 0.25rem;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.875rem;
         }
     </style>
 </head>
 <body class="bg-gray-100 p-4">
-    <div class="max-w-[1400px] mx-auto space-y-6">
+    <div class="max-w-[1600px] mx-auto space-y-6">
         <header class="flex justify-between items-center bg-white p-4 rounded shadow">
             <h1 class="text-2xl font-bold">PV System Overview | Complete PV system</h1>
             <div class="flex items-center space-x-4">
@@ -79,29 +104,51 @@
                 </div>
             </div>
 
-            <!-- Top Level System Charts -->
-            <div class="space-y-8 mb-8">
-                <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
-                    <h2 class="text-center font-bold mb-2">Power Analysis (W)</h2>
-                    <div class="flex-1 min-h-0 relative">
-                        <canvas id="power-chart"></canvas>
+            <!-- Movable Dashboard Area -->
+            <div class="grid-stack">
+                <!-- Top System Charts -->
+                <div class="grid-stack-item" gs-w="4" gs-h="4">
+                    <div class="grid-stack-item-content">
+                        <div class="drag-handle">Power Analysis (W)</div>
+                        <div class="chart-wrapper"><canvas id="power-chart"></canvas></div>
                     </div>
                 </div>
-                <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
-                    <h2 class="text-center font-bold mb-2">String Voltages (V)</h2>
-                    <div class="flex-1 min-h-0 relative">
-                        <canvas id="voltage-chart"></canvas>
+                <div class="grid-stack-item" gs-w="4" gs-h="4">
+                    <div class="grid-stack-item-content">
+                        <div class="drag-handle">String Voltages (V)</div>
+                        <div class="chart-wrapper"><canvas id="voltage-chart"></canvas></div>
                     </div>
                 </div>
-                <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
-                    <h2 class="text-center font-bold mb-2">String Currents (A)</h2>
-                    <div class="flex-1 min-h-0 relative">
-                        <canvas id="current-chart"></canvas>
+                <div class="grid-stack-item" gs-w="4" gs-h="4">
+                    <div class="grid-stack-item-content">
+                        <div class="drag-handle">String Currents (A)</div>
+                        <div class="chart-wrapper"><canvas id="current-chart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Module History Charts -->
+                <div class="grid-stack-item" gs-w="12" gs-h="4">
+                    <div class="grid-stack-item-content">
+                        <div class="drag-handle">Module Power (W)</div>
+                        <div class="chart-wrapper"><canvas id="module-power-history-chart"></canvas></div>
+                    </div>
+                </div>
+                <div class="grid-stack-item" gs-w="12" gs-h="4">
+                    <div class="grid-stack-item-content">
+                        <div class="drag-handle">Module Voltage (V)</div>
+                        <div class="chart-wrapper"><canvas id="module-voltage-history-chart"></canvas></div>
+                    </div>
+                </div>
+                <div class="grid-stack-item" gs-w="12" gs-h="4">
+                    <div class="grid-stack-item-content">
+                        <div class="drag-handle">Module Temperature (°C)</div>
+                        <div class="chart-wrapper"><canvas id="module-temp-history-chart"></canvas></div>
                     </div>
                 </div>
             </div>
 
-            <div class="border-t pt-4">
+            <!-- Static Module Display and Scrubber -->
+            <div class="border-t pt-4 mt-8">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold">Module Level Display</h2>
                     <div class="flex items-center space-x-2">
@@ -121,47 +168,6 @@
                 <input type="range" id="time-scrubber" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" min="0" max="0" step="1">
                 <div id="scrubber-time" class="text-center font-bold mt-2 text-lg">--:--:--</div>
             </div>
-
-            <!-- Module Level Comparison Charts -->
-            <div class="mt-12 space-y-8 border-t pt-8">
-                <h2 class="text-xl font-bold text-center">Module Comparison History</h2>
-                
-                <div class="chart-container border rounded shadow-sm w-full" style="width: 100%">
-                    <div class="p-2 border-b bg-gray-50 flex justify-between items-center">
-                        <h2 class="font-bold text-gray-800">Module Power (W)</h2>
-                    </div>
-                    <div class="flex flex-1 min-h-0">
-                        <div class="flex-1 min-w-0 relative p-2">
-                            <canvas id="module-power-history-chart"></canvas>
-                        </div>
-                        <div class="w-60 border-l bg-gray-50 p-2 overflow-y-auto" id="module-power-history-sidebar"></div>
-                    </div>
-                </div>
-                
-                <div class="chart-container border rounded shadow-sm w-full" style="width: 100%">
-                    <div class="p-2 border-b bg-gray-50 flex justify-between items-center">
-                        <h2 class="font-bold text-gray-800">Module Voltage (V)</h2>
-                    </div>
-                    <div class="flex flex-1 min-h-0">
-                        <div class="flex-1 min-w-0 relative p-2">
-                            <canvas id="module-voltage-history-chart"></canvas>
-                        </div>
-                        <div class="w-60 border-l bg-gray-50 p-2 overflow-y-auto" id="module-voltage-history-sidebar"></div>
-                    </div>
-                </div>
-                
-                <div class="chart-container border rounded shadow-sm w-full" style="width: 100%">
-                    <div class="p-2 border-b bg-gray-50 flex justify-between items-center">
-                        <h2 class="font-bold text-gray-800">Module Temperature (°C)</h2>
-                    </div>
-                    <div class="flex flex-1 min-h-0">
-                        <div class="flex-1 min-w-0 relative p-2">
-                            <canvas id="module-temp-history-chart"></canvas>
-                        </div>
-                        <div class="w-60 border-l bg-gray-50 p-2 overflow-y-auto" id="module-temp-history-sidebar"></div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -172,8 +178,30 @@
         let charts = {};
         let selectedMetricId = 'power';
         let refreshInterval = null;
+        let grid = null;
 
         async function init() {
+            console.log("Initializing Dashboard...");
+            if (typeof GridStack === 'undefined') {
+                console.error("GridStack not loaded!");
+                return;
+            }
+
+            // Initialize GridStack
+            grid = GridStack.init({
+                cellHeight: 80,
+                margin: 10,
+                handle: '.drag-handle'
+            });
+
+            // Re-render charts on resize
+            grid.on('resizestop', function(event, el) {
+                const canvas = el.querySelector('canvas');
+                if (canvas && charts[canvas.id]) {
+                    charts[canvas.id].resize();
+                }
+            });
+
             const configRes = await fetch('/config');
             config = await configRes.json();
 
@@ -191,22 +219,11 @@
                 updateDisplay();
             });
 
-            // Set default date to the latest date available in the database (fallback to now)
+            // Set default date
             const dateInput = document.getElementById('date-select');
             const daysSelect = document.getElementById('days-select');
-            
-            let defaultDate = new Date().toISOString().split('T')[0];
-            try {
-                const latestRes = await fetch('/data/latest');
-                const latestData = await latestRes.json();
-                if (latestData && latestData.length > 0) {
-                    const latestTs = latestData[0].timestamp;
-                    defaultDate = latestTs.split('T')[0];
-                }
-            } catch (e) {
-                console.error("Error fetching latest date, falling back to now:", e);
-            }
-            dateInput.value = defaultDate;
+            const now = new Date();
+            dateInput.value = now.toISOString().split('T')[0];
 
             dateInput.addEventListener('change', loadData);
             daysSelect.addEventListener('change', loadData);
@@ -224,24 +241,7 @@
             document.getElementById('time-scrubber').addEventListener('input', (e) => {
                 updateScrubber(parseInt(e.target.value));
             });
-
-            // Resize observers for charts
-            document.querySelectorAll('.chart-container').forEach(container => {
-                let lastWidth = container.clientWidth;
-                let lastHeight = container.clientHeight;
-                new ResizeObserver(() => {
-                    const width = container.clientWidth;
-                    const height = container.clientHeight;
-                    if (width !== lastWidth || height !== lastHeight) {
-                        lastWidth = width;
-                        lastHeight = height;
-                        const canvas = container.querySelector('canvas');
-                        if (canvas && charts[canvas.id]) {
-                            charts[canvas.id].resize();
-                        }
-                    }
-                }).observe(container);
-            });
+            console.log("Initialization complete.");
         }
 
         function startLiveRefresh() {
@@ -269,7 +269,12 @@
             });
 
             const newTimestamps = Object.keys(grouped).sort();
-            if (newTimestamps.length === 0) return;
+            if (newTimestamps.length === 0) {
+                // Clear charts if no data
+                updateCharts();
+                updateDisplay();
+                return;
+            }
 
             const scrubber = document.getElementById('time-scrubber');
             const isAtEnd = parseInt(scrubber.value) === timestamps.length - 1;
@@ -294,6 +299,7 @@
         }
 
         function updateCharts() {
+            if (!config) return;
             // 1. Power Chart
             const powerDatasets = [
                 {
@@ -400,264 +406,22 @@
                             borderWidth: 1,
                             pointRadius: 0,
                             tension: 0.1,
-                            hidden: true // Default to hidden to avoid clutter
+                            hidden: true
                         });
                     });
                 });
-                // Show first few modules by default
-                for(let i=0; i<Math.min(5, datasets.length); i++) datasets[i].hidden = false;
-
-                renderChart(mInfo.canvasId, datasets, mInfo.title);
-                buildSidebar(mInfo.canvasId, mInfo.canvasId.replace('-chart', '-sidebar'));
-            });
-        }
-
-        function buildSidebar(canvasId, sidebarId) {
-            const sidebar = document.getElementById(sidebarId);
-            sidebar.innerHTML = '';
-            
-            const chart = charts[canvasId];
-            if (!chart) return;
-
-            const datasets = chart.data.datasets;
-            
-            // Map module number to its dataset index in chart
-            const modToDatasetIdx = {};
-            let currentIdx = 0;
-            config.strings.forEach(string => {
-                string.modules.forEach(modIdx => {
-                    modToDatasetIdx[modIdx] = currentIdx++;
-                });
-            });
-
-            // Container for all elements
-            const containerDiv = document.createElement('div');
-            containerDiv.className = 'space-y-3';
-
-            let lastCheckedCheckbox = null;
-
-            config.strings.forEach(string => {
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'border border-gray-200 rounded p-1.5 bg-white';
-
-                // String Header Row
-                const headerRow = document.createElement('div');
-                headerRow.className = 'flex items-center justify-between hover:bg-gray-100 p-1 rounded cursor-pointer select-none';
-
-                const leftSection = document.createElement('div');
-                leftSection.className = 'flex items-center space-x-1.5';
-
-                const expandBtn = document.createElement('span');
-                expandBtn.className = 'expand-btn text-[10px] w-4 text-center font-bold text-gray-500';
-                expandBtn.textContent = '▼';
-
-                const stringCheckbox = document.createElement('input');
-                stringCheckbox.type = 'checkbox';
-                stringCheckbox.className = 'string-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500';
-                
-                const titleSpan = document.createElement('span');
-                titleSpan.className = 'font-semibold text-gray-800 text-[11px]';
-                titleSpan.textContent = string.name;
-
-                leftSection.appendChild(expandBtn);
-                leftSection.appendChild(stringCheckbox);
-                leftSection.appendChild(titleSpan);
-
-                const rightSection = document.createElement('div');
-                rightSection.className = 'flex items-center space-x-1';
-
-                const badge = document.createElement('span');
-                badge.className = 'text-[9px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full count-badge font-medium';
-
-                rightSection.appendChild(badge);
-
-                headerRow.appendChild(leftSection);
-                headerRow.appendChild(rightSection);
-                groupDiv.appendChild(headerRow);
-
-                // Modules list container
-                const listDiv = document.createElement('div');
-                listDiv.className = 'pl-5 pr-1 mt-1 space-y-1 modules-list';
-
-                const checkboxes = [];
-
-                string.modules.forEach(modIdx => {
-                    const dsIdx = modToDatasetIdx[modIdx];
-                    if (dsIdx === undefined) return;
-
-                    const dataset = datasets[dsIdx];
-                    
-                    const label = document.createElement('label');
-                    label.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer select-none text-[11px]';
-
-                    const cb = document.createElement('input');
-                    cb.type = 'checkbox';
-                    cb.className = 'module-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500';
-                    cb.checked = !dataset.hidden;
-                    cb.dataset.mod = modIdx;
-                    cb.dataset.dsIdx = dsIdx;
-
-                    const nameSpan = document.createElement('span');
-                    nameSpan.className = 'text-gray-700';
-                    nameSpan.textContent = `M#${modIdx}`;
-
-                    const colorBlock = document.createElement('span');
-                    colorBlock.className = 'w-3 h-1.5 rounded-sm inline-block';
-                    colorBlock.style.backgroundColor = dataset.borderColor || '#ccc';
-
-                    label.appendChild(cb);
-                    label.appendChild(colorBlock);
-                    label.appendChild(nameSpan);
-                    listDiv.appendChild(label);
-
-                    checkboxes.push(cb);
-
-                    // Hover effects to highlight this module's trace
-                    label.addEventListener('mouseenter', () => {
-                        const idx = parseInt(cb.dataset.dsIdx);
-                        const ds = datasets[idx];
-                        if (ds.hidden) return; // Do nothing if trace is not currently being drawn
-
-                        if (!ds.originalBorderWidth) {
-                            ds.originalBorderWidth = ds.borderWidth || 1;
-                        }
-                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Highlight trace
-                        chart.update('none');
-                    });
-
-                    label.addEventListener('mouseleave', () => {
-                        const idx = parseInt(cb.dataset.dsIdx);
-                        const ds = datasets[idx];
-                        if (ds.originalBorderWidth !== undefined) {
-                            ds.borderWidth = ds.originalBorderWidth; // Restore trace
-                            chart.update('none');
-                        }
-                    });
-                });
-
-                groupDiv.appendChild(listDiv);
-                containerDiv.appendChild(groupDiv);
-
-                // Helper to update the String Header checkbox and badge
-                function updateHeaderState() {
-                    const total = checkboxes.length;
-                    const checkedCount = checkboxes.filter(c => c.checked).length;
-                    
-                    badge.textContent = `${checkedCount}/${total}`;
-                    
-                    if (checkedCount === total) {
-                        stringCheckbox.checked = true;
-                        stringCheckbox.indeterminate = false;
-                    } else if (checkedCount === 0) {
-                        stringCheckbox.checked = false;
-                        stringCheckbox.indeterminate = false;
-                    } else {
-                        stringCheckbox.checked = false;
-                        stringCheckbox.indeterminate = true;
-                    }
+                if (datasets.length > 0) {
+                    for(let i=0; i<Math.min(5, datasets.length); i++) datasets[i].hidden = false;
                 }
 
-                updateHeaderState();
-
-                // Toggle string expand/collapse on click
-                const toggleExpand = (e) => {
-                    if (e.target === stringCheckbox) return;
-                    const isCollapsed = listDiv.classList.contains('hidden');
-                    if (isCollapsed) {
-                        listDiv.classList.remove('hidden');
-                        expandBtn.textContent = '▼';
-                    } else {
-                        listDiv.classList.add('hidden');
-                        expandBtn.textContent = '▶';
-                    }
-                };
-                headerRow.addEventListener('click', toggleExpand);
-
-                // Hover effects on String Header to highlight all active module traces in this string group
-                headerRow.addEventListener('mouseenter', (e) => {
-                    if (e.target === stringCheckbox) return;
-                    checkboxes.forEach(cb => {
-                        if (!cb.checked) return; // Only highlight visible traces
-                        const idx = parseInt(cb.dataset.dsIdx);
-                        const ds = datasets[idx];
-                        if (!ds.originalBorderWidth) {
-                            ds.originalBorderWidth = ds.borderWidth || 1;
-                        }
-                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Highlight trace
-                    });
-                    chart.update('none');
-                });
-
-                headerRow.addEventListener('mouseleave', () => {
-                    checkboxes.forEach(cb => {
-                        const idx = parseInt(cb.dataset.dsIdx);
-                        const ds = datasets[idx];
-                        if (ds.originalBorderWidth !== undefined) {
-                            ds.borderWidth = ds.originalBorderWidth; // Restore trace
-                        }
-                    });
-                    chart.update('none');
-                });
-
-                // Click handler for String Checkbox
-                stringCheckbox.addEventListener('change', (e) => {
-                    const checked = stringCheckbox.checked;
-                    checkboxes.forEach(cb => {
-                        if (cb.checked !== checked) {
-                            cb.checked = checked;
-                            const dsIdx = parseInt(cb.dataset.dsIdx);
-                            chart.data.datasets[dsIdx].hidden = !checked;
-                        }
-                    });
-                    chart.update();
-                    updateHeaderState();
-                });
-
-                // Module Checkbox Interaction with Shift-Click
-                listDiv.addEventListener('click', (e) => {
-                    if (e.target.type !== 'checkbox') return;
-
-                    const clickedCb = e.target;
-                    const dsIdx = parseInt(clickedCb.dataset.dsIdx);
-                    chart.data.datasets[dsIdx].hidden = !clickedCb.checked;
-
-                    if (e.shiftKey && lastCheckedCheckbox) {
-                        const allCbs = Array.from(sidebar.querySelectorAll('.module-checkbox'));
-                        const start = allCbs.indexOf(lastCheckedCheckbox);
-                        const end = allCbs.indexOf(clickedCb);
-                        
-                        if (start !== -1 && end !== -1) {
-                            const [minIdx, maxIdx] = [Math.min(start, end), Math.max(start, end)];
-                            const targetState = clickedCb.checked;
-                            
-                            for (let i = minIdx; i <= maxIdx; i++) {
-                                const targetCb = allCbs[i];
-                                if (targetCb.checked !== targetState) {
-                                    targetCb.checked = targetState;
-                                    const targetDsIdx = parseInt(targetCb.dataset.dsIdx);
-                                    chart.data.datasets[targetDsIdx].hidden = !targetState;
-                                }
-                            }
-                        }
-                    }
-
-                    lastCheckedCheckbox = clickedCb;
-                    chart.update();
-                    
-                    // Trigger custom updates on all string headers in the sidebar
-                    sidebar.querySelectorAll('.string-checkbox').forEach(sc => {
-                        if (sc.updateHeader) sc.updateHeader();
-                    });
-                });
-
-                stringCheckbox.updateHeader = updateHeaderState;
+                renderChart(mInfo.canvasId, datasets, mInfo.title);
             });
-
-            sidebar.appendChild(containerDiv);
         }
 
         function renderChart(canvasId, datasets, yTitle) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
             if (charts[canvasId]) charts[canvasId].destroy();
 
             const isMultiDay = document.getElementById('days-select').value > 1;
@@ -689,32 +453,6 @@
                                 boxWidth: 10,
                                 font: { size: 10 },
                                 usePointStyle: true
-                            },
-                            onHover: (event, legendItem, legend) => {
-                                const chart = legend.chart;
-                                const dsIdx = legendItem.datasetIndex;
-                                if (!chart.isDatasetVisible(dsIdx)) return;
-                                
-                                chart.data.datasets.forEach((ds, idx) => {
-                                    if (!ds.originalBorderWidth) {
-                                        ds.originalBorderWidth = ds.borderWidth || 1.5;
-                                    }
-                                    if (idx === dsIdx) {
-                                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Highlight trace
-                                    } else {
-                                        ds.borderWidth = ds.originalBorderWidth;
-                                    }
-                                });
-                                chart.update('none');
-                            },
-                            onLeave: (event, legendItem, legend) => {
-                                const chart = legend.chart;
-                                chart.data.datasets.forEach((ds) => {
-                                    if (ds.originalBorderWidth !== undefined) {
-                                        ds.borderWidth = ds.originalBorderWidth; // Restore trace
-                                    }
-                                });
-                                chart.update('none');
                             }
                         },
                         tooltip: {
@@ -729,18 +467,36 @@
 
         function updateScrubber(index) {
             if (index < 0 || index >= timestamps.length) return;
-            const ts = timestamps[index];
-            const date = new Date(ts);
-            document.getElementById('scrubber-time').textContent = date.toLocaleString();
             updateDisplay(index);
         }
 
+        function formatValue(val) {
+            if (val === null || val === undefined || isNaN(val)) return '--';
+            const num = parseFloat(val);
+            if (num > 100) return num.toFixed(1);
+            if (num > 10) return num.toFixed(2);
+            return num.toFixed(3);
+        }
+
         function updateDisplay(index = null) {
-            if (index === null) index = parseInt(document.getElementById('time-scrubber').value);
-            if (index < 0 || index >= timestamps.length) return;
+            if (!config) return;
+            const scrubber = document.getElementById('time-scrubber');
+            if (index === null) index = parseInt(scrubber.value);
+
+            const container = document.getElementById('module-display');
+            const timeDisplay = document.getElementById('scrubber-time');
+
+            if (index < 0 || index >= timestamps.length) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-8">No data for selected period</div>';
+                timeDisplay.textContent = '--:--:--';
+                return;
+            }
+
+            // Update time display string
+            const ts = timestamps[index];
+            timeDisplay.textContent = new Date(ts).toLocaleString();
 
             const measurements = dailyData[index];
-            const container = document.getElementById('module-display');
             container.innerHTML = '';
 
             const metric = config.metrics.find(m => m.id === selectedMetricId);
@@ -765,9 +521,10 @@
 
                     const modDiv = document.createElement('div');
                     modDiv.className = 'module rounded shadow-inner';
+                    const displayValue = m ? formatValue(m.value) : '--';
                     modDiv.innerHTML = `
                         <div class="text-[10px] opacity-75">#${modIdx}</div>
-                        <div class="module-value text-sm">${m ? m.value : '--'}</div>
+                        <div class="module-value text-sm">${displayValue}</div>
                         <div class="text-[10px] opacity-75">${metric.unit}</div>
                     `;
                     gridDiv.appendChild(modDiv);
@@ -778,7 +535,7 @@
             });
         }
 
-        init();
+        window.onload = init;
     </script>
 </body>
 </html>

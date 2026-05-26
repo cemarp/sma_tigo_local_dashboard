@@ -81,7 +81,7 @@ async def get_daily_data(date: str = Query(None), days: int = Query(1)):
 
 @app.get("/")
 async def read_index():
-    return FileResponse("static/index.html")
+    return FileResponse("static/index.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 # Serve static files (HTML, JS, CSS)
 if not os.path.exists("static"):

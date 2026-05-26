@@ -159,11 +159,22 @@
                 updateDisplay();
             });
 
-            // Set default date
+            // Set default date to the latest date available in the database (fallback to now)
             const dateInput = document.getElementById('date-select');
             const daysSelect = document.getElementById('days-select');
-            const now = new Date();
-            dateInput.value = now.toISOString().split('T')[0];
+            
+            let defaultDate = new Date().toISOString().split('T')[0];
+            try {
+                const latestRes = await fetch('/data/latest');
+                const latestData = await latestRes.json();
+                if (latestData && latestData.length > 0) {
+                    const latestTs = latestData[0].timestamp;
+                    defaultDate = latestTs.split('T')[0];
+                }
+            } catch (e) {
+                console.error("Error fetching latest date, falling back to now:", e);
+            }
+            dateInput.value = defaultDate;
 
             dateInput.addEventListener('change', loadData);
             daysSelect.addEventListener('change', loadData);

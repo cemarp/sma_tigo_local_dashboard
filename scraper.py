@@ -63,19 +63,18 @@ def ensure_cached_files(session, base_url):
     metadata = None
     try:
         if os.path.exists(L10N_CACHE):
-            with open(L10N_CACHE, "r", encoding="utf-8") as f: en_us = json.load(f)
+            with open(L10N_CACHE, "r") as f: en_us = json.load(f)
         if not en_us:
             r = session.get(f"{base_url}/data/l10n/en-US.json", verify=False, timeout=10)
             en_us = r.json()
-            with open(L10N_CACHE, "w", encoding="utf-8") as f: json.dump(en_us, f)
+            with open(L10N_CACHE, "w") as f: json.dump(en_us, f)
         if os.path.exists(META_CACHE):
-            with open(META_CACHE, "r", encoding="utf-8") as f: metadata = json.load(f)
+            with open(META_CACHE, "r") as f: metadata = json.load(f)
         if not metadata:
             r = session.get(f"{base_url}/data/ObjectMetadata_User.json", verify=False, timeout=10)
             metadata = r.json()
-            with open(META_CACHE, "w", encoding="utf-8") as f: json.dump(metadata, f)
-    except Exception as e:
-        print(f"Error ensuring cached files: {e}")
+            with open(META_CACHE, "w") as f: json.dump(metadata, f)
+    except Exception:
         pass
     return en_us, metadata
 

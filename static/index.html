@@ -48,6 +48,17 @@
             flex-direction: column;
             overflow: hidden;
         }
+        .sidebar-container {
+            width: 200px;
+            min-width: 200px;
+            border-left: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+            padding: 0.5rem;
+            overflow-y: auto;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
         .chart-wrapper {
             flex-grow: 1;
             min-height: 0;
@@ -127,22 +138,37 @@
                 </div>
 
                 <!-- Module History Charts -->
-                <div class="grid-stack-item" gs-w="12" gs-h="4">
+                <div class="grid-stack-item" gs-w="12" gs-h="6">
                     <div class="grid-stack-item-content">
                         <div class="drag-handle">Module Power (W)</div>
-                        <div class="chart-wrapper"><canvas id="module-power-history-chart"></canvas></div>
+                        <div class="flex flex-1 min-h-0">
+                            <div class="flex-1 min-w-0 relative">
+                                <canvas id="module-power-history-chart"></canvas>
+                            </div>
+                            <div class="sidebar-container" id="module-power-history-sidebar"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-w="12" gs-h="4">
+                <div class="grid-stack-item" gs-w="12" gs-h="6">
                     <div class="grid-stack-item-content">
                         <div class="drag-handle">Module Voltage (V)</div>
-                        <div class="chart-wrapper"><canvas id="module-voltage-history-chart"></canvas></div>
+                        <div class="flex flex-1 min-h-0">
+                            <div class="flex-1 min-w-0 relative">
+                                <canvas id="module-voltage-history-chart"></canvas>
+                            </div>
+                            <div class="sidebar-container" id="module-voltage-history-sidebar"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-w="12" gs-h="4">
+                <div class="grid-stack-item" gs-w="12" gs-h="6">
                     <div class="grid-stack-item-content">
                         <div class="drag-handle">Module Temperature (°C)</div>
-                        <div class="chart-wrapper"><canvas id="module-temp-history-chart"></canvas></div>
+                        <div class="flex flex-1 min-h-0">
+                            <div class="flex-1 min-w-0 relative">
+                                <canvas id="module-temp-history-chart"></canvas>
+                            </div>
+                            <div class="sidebar-container" id="module-temp-history-sidebar"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -200,6 +226,24 @@
                 if (canvas && charts[canvas.id]) {
                     charts[canvas.id].resize();
                 }
+            });
+
+            // Guarded ResizeObservers to prevent jittering during interaction
+            document.querySelectorAll('.grid-stack-item-content').forEach(container => {
+                let lastWidth = container.clientWidth;
+                let lastHeight = container.clientHeight;
+                new ResizeObserver(() => {
+                    const width = container.clientWidth;
+                    const height = container.clientHeight;
+                    if (Math.abs(width - lastWidth) > 1 || Math.abs(height - lastHeight) > 1) {
+                        lastWidth = width;
+                        lastHeight = height;
+                        const canvas = container.querySelector('canvas');
+                        if (canvas && charts[canvas.id]) {
+                            charts[canvas.id].resize();
+                        }
+                    }
+                }).observe(container);
             });
 
             const configRes = await fetch('/config');
@@ -403,7 +447,7 @@
                                 });
                                 return { x: new Date(ts), y: m ? parseFloat(m.value) : null };
                             }),
-                            borderWidth: 1,
+                            borderWidth: 1.5,
                             pointRadius: 0,
                             tension: 0.1,
                             hidden: true
@@ -414,11 +458,219 @@
                     for(let i=0; i<Math.min(5, datasets.length); i++) datasets[i].hidden = false;
                 }
 
-                renderChart(mInfo.canvasId, datasets, mInfo.title);
+                renderChart(mInfo.canvasId, datasets, mInfo.title, false);
+                buildSidebar(mInfo.canvasId, mInfo.canvasId.replace('-chart', '-sidebar'));
             });
         }
 
-        function renderChart(canvasId, datasets, yTitle) {
+        function buildSidebar(canvasId, sidebarId) {
+            const sidebar = document.getElementById(sidebarId);
+            if (!sidebar) return;
+            sidebar.innerHTML = '<div class="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-wider">Trace Selection</div>';
+
+            const chart = charts[canvasId];
+            if (!chart) return;
+            const datasets = chart.data.datasets;
+
+            // Map module number to its dataset index in chart
+            const modToDatasetIdx = {};
+            let currentIdx = 0;
+            config.strings.forEach(string => {
+                string.modules.forEach(modIdx => {
+                    modToDatasetIdx[modIdx] = currentIdx++;
+                });
+            });
+            const containerDiv = document.createElement('div');
+            containerDiv.className = 'space-y-3';
+            let lastCheckedCheckbox = null;
+            config.strings.forEach(string => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'border border-gray-200 rounded p-1.5 bg-white shadow-sm';
+                // String Header Row (Collapsible & Group Clickable)
+                const headerRow = document.createElement('div');
+                headerRow.className = 'flex items-center justify-between hover:bg-gray-100 p-1 rounded cursor-pointer select-none';
+                const leftSection = document.createElement('div');
+                leftSection.className = 'flex items-center space-x-1.5';
+                const expandBtn = document.createElement('span');
+                expandBtn.className = 'expand-btn text-[10px] w-4 text-center font-bold text-gray-500';
+                expandBtn.textContent = '▼';
+                const stringCheckbox = document.createElement('input');
+                stringCheckbox.type = 'checkbox';
+                stringCheckbox.className = 'string-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'font-semibold text-gray-800 text-[11px]';
+                titleSpan.textContent = string.name;
+                leftSection.appendChild(expandBtn);
+                leftSection.appendChild(stringCheckbox);
+                leftSection.appendChild(titleSpan);
+                const badge = document.createElement('span');
+                badge.className = 'text-[9px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full count-badge font-medium';
+                headerRow.appendChild(leftSection);
+                headerRow.appendChild(badge);
+                groupDiv.appendChild(headerRow);
+                // Modules checkbox list
+                const listDiv = document.createElement('div');
+                listDiv.className = 'pl-5 pr-1 mt-1 space-y-1 modules-list';
+                const checkboxes = [];
+                string.modules.forEach(modIdx => {
+                    const dsIdx = modToDatasetIdx[modIdx];
+                    if (dsIdx === undefined) return;
+                    const dataset = datasets[dsIdx];
+
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer select-none text-[11px]';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.className = 'module-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+                    cb.checked = !dataset.hidden;
+                    cb.dataset.mod = modIdx;
+                    cb.dataset.dsIdx = dsIdx;
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'text-gray-700';
+                    nameSpan.textContent = `M#${modIdx}`;
+                    // Small color block to match the Chart trace line!
+                    const colorBlock = document.createElement('span');
+                    colorBlock.className = 'w-3 h-1.5 rounded-sm inline-block';
+                    colorBlock.style.backgroundColor = dataset.borderColor || '#ccc';
+                    label.appendChild(cb);
+                    label.appendChild(colorBlock);
+                    label.appendChild(nameSpan);
+                    listDiv.appendChild(label);
+                    checkboxes.push(cb);
+                    // ==========================================
+                    // HOVER EFFECT: Highlight single module trace
+                    // ==========================================
+                    label.addEventListener('mouseenter', () => {
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (ds.hidden) return; // Ignore if unchecked
+                        if (!ds.originalBorderWidth) {
+                            ds.originalBorderWidth = ds.borderWidth || 1.5;
+                        }
+                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Thicken trace
+                        chart.update('none');
+                    });
+                    label.addEventListener('mouseleave', () => {
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (ds.originalBorderWidth !== undefined) {
+                            ds.borderWidth = ds.originalBorderWidth; // Restore trace
+                            chart.update('none');
+                        }
+                    });
+                });
+                groupDiv.appendChild(listDiv);
+                containerDiv.appendChild(groupDiv);
+                // Helper to update the String Header checkbox state & counts
+                function updateHeaderState() {
+                    const total = checkboxes.length;
+                    const checkedCount = checkboxes.filter(c => c.checked).length;
+                    badge.textContent = `${checkedCount}/${total}`;
+
+                    if (checkedCount === total) {
+                        stringCheckbox.checked = true;
+                        stringCheckbox.indeterminate = false;
+                    } else if (checkedCount === 0) {
+                        stringCheckbox.checked = false;
+                        stringCheckbox.indeterminate = false;
+                    } else {
+                        stringCheckbox.checked = false;
+                        stringCheckbox.indeterminate = true;
+                    }
+                }
+                updateHeaderState();
+                // Collapse/Expand toggler on group row click
+                const toggleExpand = (e) => {
+                    if (e.target === stringCheckbox) return;
+                    const isCollapsed = listDiv.classList.contains('hidden');
+                    if (isCollapsed) {
+                        listDiv.classList.remove('hidden');
+                        expandBtn.textContent = '▼';
+                    } else {
+                        listDiv.classList.add('hidden');
+                        expandBtn.textContent = '▶';
+                    }
+                };
+                headerRow.addEventListener('click', toggleExpand);
+                // ==========================================
+                // HOVER EFFECT: Highlight entire String Group
+                // ==========================================
+                headerRow.addEventListener('mouseenter', (e) => {
+                    if (e.target === stringCheckbox) return;
+                    checkboxes.forEach(cb => {
+                        if (!cb.checked) return;
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (!ds.originalBorderWidth) {
+                            ds.originalBorderWidth = ds.borderWidth || 1.5;
+                        }
+                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Thicken all visible traces in group
+                    });
+                    chart.update('none');
+                });
+                headerRow.addEventListener('mouseleave', () => {
+                    checkboxes.forEach(cb => {
+                        const idx = parseInt(cb.dataset.dsIdx);
+                        const ds = datasets[idx];
+                        if (ds.originalBorderWidth !== undefined) {
+                            ds.borderWidth = ds.originalBorderWidth;
+                        }
+                    });
+                    chart.update('none');
+                });
+                // Click String checkbox -> Toggles all child module checkboxes
+                stringCheckbox.addEventListener('change', () => {
+                    const checked = stringCheckbox.checked;
+                    checkboxes.forEach(cb => {
+                        if (cb.checked !== checked) {
+                            cb.checked = checked;
+                            const dsIdx = parseInt(cb.dataset.dsIdx);
+                            chart.data.datasets[dsIdx].hidden = !checked;
+                        }
+                    });
+                    chart.update();
+                    updateHeaderState();
+                });
+                // Click Module checkbox -> Supports SHIFT-CLICK range selection
+                listDiv.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox') return;
+                    const clickedCb = e.target;
+                    const dsIdx = parseInt(clickedCb.dataset.dsIdx);
+                    chart.data.datasets[dsIdx].hidden = !clickedCb.checked;
+                    if (e.shiftKey && lastCheckedCheckbox) {
+                        const allCbs = Array.from(sidebar.querySelectorAll('.module-checkbox'));
+                        const start = allCbs.indexOf(lastCheckedCheckbox);
+                        const end = allCbs.indexOf(clickedCb);
+
+                        if (start !== -1 && end !== -1) {
+                            const [minIdx, maxIdx] = [Math.min(start, end), Math.max(start, end)];
+                            const targetState = clickedCb.checked;
+
+                            for (let i = minIdx; i <= maxIdx; i++) {
+                                const targetCb = allCbs[i];
+                                if (targetCb.checked !== targetState) {
+                                    targetCb.checked = targetState;
+                                    const targetDsIdx = parseInt(targetCb.dataset.dsIdx);
+                                    chart.data.datasets[targetDsIdx].hidden = !targetState;
+                                }
+                            }
+                        }
+                    }
+                    lastCheckedCheckbox = clickedCb;
+                    chart.update();
+
+                    // Sync all header states
+                    sidebar.querySelectorAll('.string-checkbox').forEach(sc => {
+                        if (sc.updateHeader) sc.updateHeader();
+                    });
+                });
+                stringCheckbox.updateHeader = updateHeaderState;
+            });
+            sidebar.appendChild(containerDiv);
+        }
+
+        function renderChart(canvasId, datasets, yTitle, showLegend = true) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
@@ -448,11 +700,40 @@
                     },
                     plugins: {
                         legend: {
+                            display: showLegend,
                             position: 'bottom',
                             labels: {
                                 boxWidth: 10,
                                 font: { size: 10 },
                                 usePointStyle: true
+                            },
+                            // Highlight trace on hover
+                            onHover: (event, legendItem, legend) => {
+                                const chart = legend.chart;
+                                const dsIdx = legendItem.datasetIndex;
+                                if (!chart.isDatasetVisible(dsIdx)) return;
+
+                                chart.data.datasets.forEach((ds, idx) => {
+                                    if (!ds.originalBorderWidth) {
+                                        ds.originalBorderWidth = ds.borderWidth || 1.5;
+                                    }
+                                    if (idx === dsIdx) {
+                                        ds.borderWidth = ds.originalBorderWidth + 3.0; // Highlight
+                                    } else {
+                                        ds.borderWidth = ds.originalBorderWidth;
+                                    }
+                                });
+                                chart.update('none'); // Update immediately without animation reset
+                            },
+                            // Reset trace widths on cursor leave
+                            onLeave: (event, legendItem, legend) => {
+                                const chart = legend.chart;
+                                chart.data.datasets.forEach((ds) => {
+                                    if (ds.originalBorderWidth !== undefined) {
+                                        ds.borderWidth = ds.originalBorderWidth; // Restore
+                                    }
+                                });
+                                chart.update('none');
                             }
                         },
                         tooltip: {

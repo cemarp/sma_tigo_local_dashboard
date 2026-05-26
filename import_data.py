@@ -6,6 +6,19 @@ def import_csv_to_sqlite(csv_filepath, db_filepath, module_serial):
     conn = sqlite3.connect(db_filepath)
     cursor = conn.cursor()
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS measurements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            category TEXT,
+            parameter TEXT,
+            value TEXT,
+            unit TEXT,
+            raw_value TEXT,
+            scale REAL,
+            key TEXT
+        )
+    ''')
     # Clear existing data to avoid duplicates during testing
     cursor.execute("DELETE FROM measurements")
 

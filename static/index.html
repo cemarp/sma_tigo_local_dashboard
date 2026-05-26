@@ -32,10 +32,12 @@
             height: 350px;
             position: relative;
             resize: both;
-            overflow: auto;
+            overflow: hidden;
             min-height: 200px;
             min-width: 300px;
             background: white;
+            display: flex;
+            flex-direction: column;
         }
     </style>
 </head>
@@ -81,15 +83,21 @@
             <div class="space-y-8 mb-8">
                 <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
                     <h2 class="text-center font-bold mb-2">Power Analysis (W)</h2>
-                    <canvas id="power-chart"></canvas>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="power-chart"></canvas>
+                    </div>
                 </div>
                 <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
                     <h2 class="text-center font-bold mb-2">String Voltages (V)</h2>
-                    <canvas id="voltage-chart"></canvas>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="voltage-chart"></canvas>
+                    </div>
                 </div>
                 <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
                     <h2 class="text-center font-bold mb-2">String Currents (A)</h2>
-                    <canvas id="current-chart"></canvas>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="current-chart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -119,15 +127,21 @@
                 <h2 class="text-xl font-bold text-center">Module Comparison History</h2>
                 <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
                     <h2 class="text-center font-bold mb-2">Module Power (W)</h2>
-                    <canvas id="module-power-history-chart"></canvas>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="module-power-history-chart"></canvas>
+                    </div>
                 </div>
                 <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
                     <h2 class="text-center font-bold mb-2">Module Voltage (V)</h2>
-                    <canvas id="module-voltage-history-chart"></canvas>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="module-voltage-history-chart"></canvas>
+                    </div>
                 </div>
                 <div class="chart-container border p-2 rounded shadow-sm w-full" style="width: 100%">
                     <h2 class="text-center font-bold mb-2">Module Temperature (°C)</h2>
-                    <canvas id="module-temp-history-chart"></canvas>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="module-temp-history-chart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -195,10 +209,18 @@
 
             // Resize observers for charts
             document.querySelectorAll('.chart-container').forEach(container => {
+                let lastWidth = container.clientWidth;
+                let lastHeight = container.clientHeight;
                 new ResizeObserver(() => {
-                    const canvas = container.querySelector('canvas');
-                    if (canvas && charts[canvas.id]) {
-                        charts[canvas.id].resize();
+                    const width = container.clientWidth;
+                    const height = container.clientHeight;
+                    if (width !== lastWidth || height !== lastHeight) {
+                        lastWidth = width;
+                        lastHeight = height;
+                        const canvas = container.querySelector('canvas');
+                        if (canvas && charts[canvas.id]) {
+                            charts[canvas.id].resize();
+                        }
                     }
                 }).observe(container);
             });
